@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Data Obat Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .info-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .button-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .preview-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid #e0e0e0;
+            max-height: 400px;
+            overflow: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f0f8ff;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .loading {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Generator Data Obat Excel</h1>
+        
+        <div class="info-box">
+            <h3>📊 Informasi Data</h3>
+            <p>Generator ini akan membuat 200 data obat lengkap dengan kolom:</p>
+            <p><strong>Nama Barang • Jumlah Barang Masuk • Jumlah Barang Keluar • Jumlah Stok • Tanggal • Tanggal Kadaluwarsa • Stok Default • Harga Jual • Harga Beli • Dijual dalam bentuk</strong></p>
+        </div>
+
+        <div class="button-container">
+            <button onclick="generateData()">🔄 Generate Data Obat</button>
+            <button onclick="downloadExcel()" id="downloadBtn" disabled>📥 Download Excel File</button>
+            <button onclick="previewData()" id="previewBtn" disabled>👁️ Preview Data</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="preview" class="preview-container" style="display: none;"></div>
+    </div>
+
+    <script>
+        let medicineData = [];
+
+        // Daftar nama obat yang umum digunakan
+        const medicineNames = [
+            'PARACETAMOL 500MG', 'AMOXICILLIN 500MG', 'OBH COMBI', 'BETADINE SOLUTION',
+            'BODREX EXTRA', 'MYLANTA TABLET', 'ANTANGIN JRG', 'TOLAK ANGIN',
+            'PROMAG TABLET', 'SANMOL SIRUP', 'TEMPRA SIRUP', 'BISOLVON',
+            'VICKS FORMULA 44', 'PARAMEX', 'PONSTAN 500MG', 'ASPIRIN 100MG',
+            'IBUPROFEN 400MG', 'VITAMIN C 500MG', 'VITAMIN B COMPLEX', 'ZINC TABLET',
+            'CALCIUM LACTATE', 'IRON TABLET', 'OMEPRAZOLE 20MG', 'RANITIDINE 150MG',
+            'DOMPERIDONE 10MG', 'LOPERAMIDE 2MG', 'DIAZEPAM 5MG', 'LORAZEPAM 1MG',
+            'ALPRAZOLAM 0.5MG', 'CLONAZEPAM 2MG', 'PHENYTOIN 100MG', 'CARBAMAZEPINE 200MG',
+            'METFORMIN 500MG', 'GLIBENCLAMIDE 5MG', 'INSULIN RAPID', 'CAPTOPRIL 25MG',
+            'AMLODIPINE 10MG', 'NIFEDIPINE 10MG', 'ATENOLOL 50MG', 'PROPRANOLOL 40MG',
+            'SIMVASTATIN 20MG', 'ATORVASTATIN 20MG', 'FUROSEMIDE 40MG', 'SPIRONOLACTONE 25MG',
+            'PREDNISONE 5MG', 'DEXAMETHASONE 0.5MG', 'CETIRIZINE 10MG', 'LORATADINE 10MG',
+            'CHLORPHENIRAMINE 4MG', 'DIPHENHYDRAMINE 25MG', 'SALBUTAMOL INHALER', 'THEOPHYLLINE 200MG',
+            'CODEINE 30MG', 'TRAMADOL 50MG', 'MORPHINE 10MG', 'FENTANYL PATCH',
+            'CIPROFLOXACIN 500MG', 'AZITHROMYCIN 500MG', 'DOXYCYCLINE 100MG', 'METRONIDAZOLE 500MG',
+            'FLUCONAZOLE 150MG', 'ACYCLOVIR 400MG', 'OSELTAMIVIR 75MG', 'LAMIVUDINE 150MG',
+            'EFAVIRENZ 600MG', 'ZIDOVUDINE 300MG', 'LOPINAVIR 200MG', 'RITONAVIR 50MG',
+            'WARFARIN 5MG', 'CLOPIDOGREL 75MG', 'ASPIRIN 325MG', 'HEPARIN INJECTION',
+            'DIGOXIN 0.25MG', 'VERAPAMIL 80MG', 'DILTIAZEM 60MG', 'LOSARTAN 50MG',
+            'IRBESARTAN 150MG', 'LISINOPRIL 10MG', 'ENALAPRIL 5MG', 'RAMIPRIL 5MG',
+            'HYDROCHLOROTHIAZIDE 25MG', 'INDAPAMIDE 2.5MG', 'CHLORTHALIDONE 25MG', 'TORSEMIDE 10MG',
+            'LEVOTHYROXINE 100MCG', 'METHIMAZOLE 5MG', 'PROPYLTHIOURACIL 50MG', 'INSULIN GLARGINE',
+            'INSULIN ASPART', 'METFORMIN XR 500MG', 'PIOGLITAZONE 30MG', 'GLICLAZIDE 80MG',
+            'ACARBOSE 50MG', 'SITAGLIPTIN 100MG', 'SAXAGLIPTIN 5MG', 'LIRAGLUTIDE INJECTION',
+            'ALLOPURINOL 300MG', 'COLCHICINE 0.6MG', 'PROBENECID 500MG', 'FEBUXOSTAT 80MG',
+            'ALENDRONATE 70MG', 'RISEDRONATE 35MG', 'CALCITRIOL 0.25MCG', 'ALFACALCIDOL 1MCG',
+            'FOLIC ACID 5MG', 'CYANOCOBALAMIN 1000MCG', 'PYRIDOXINE 50MG', 'THIAMINE 100MG',
+            'RIBOFLAVIN 10MG', 'NIACIN 500MG', 'BIOTIN 10MG', 'PANTOTHENIC ACID 100MG',
+            'VITAMIN D3 1000IU', 'VITAMIN E 400IU', 'VITAMIN K 100MCG', 'MULTIVITAMIN TABLET',
+            'OMEGA-3 1000MG', 'COENZYME Q10 100MG', 'GLUCOSAMINE 1500MG', 'CHONDROITIN 800MG',
+            'MSM 1000MG', 'TURMERIC EXTRACT 500MG', 'GINKGO BILOBA 120MG', 'GINSENG EXTRACT 200MG',
+            'ECHINACEA 400MG', 'GARLIC EXTRACT 600MG', 'MILK THISTLE 150MG', 'SAW PALMETTO 320MG',
+            'CRANBERRY EXTRACT 500MG', 'PROBIOTICS 10B CFU', 'DIGESTIVE ENZYMES', 'FIBER SUPPLEMENT',
+            'MELATONIN 3MG', 'VALERIAN ROOT 450MG', 'PASSIONFLOWER 250MG', 'CHAMOMILE TEA',
+            'GREEN TEA EXTRACT 500MG', 'RESVERATROL 100MG', 'ALPHA LIPOIC ACID 300MG', 'NAC 600MG',
+            'MAGNESIUM GLYCINATE 400MG', 'POTASSIUM CITRATE 300MG', 'CHROMIUM 200MCG', 'SELENIUM 200MCG',
+            'IODINE 150MCG', 'MOLYBDENUM 75MCG', 'BORON 3MG', 'VANADIUM 50MCG',
+            'BETADINE GARGLE', 'ANTISEPTIC SOLUTION', 'HYDROGEN PEROXIDE 3%', 'ALCOHOL 70%',
+            'POVIDONE IODINE 10%', 'CHLORHEXIDINE 0.2%', 'SILVER SULFADIAZINE CREAM', 'MUPIROCIN OINTMENT',
+            'HYDROCORTISONE CREAM 1%', 'TRIAMCINOLONE CREAM 0.1%', 'CLOBETASOL CREAM 0.05%', 'CALAMINE LOTION',
+            'ZINC OXIDE CREAM', 'PETROLEUM JELLY', 'MOISTURIZING CREAM', 'SUNSCREEN SPF 30',
+            'ANTIFUNGAL CREAM', 'KETOCONAZOLE CREAM 2%', 'MICONAZOLE CREAM 2%', 'TERBINAFINE CREAM 1%',
+            'ACNE TREATMENT GEL', 'BENZOYL PEROXIDE 5%', 'TRETINOIN CREAM 0.05%', 'ADAPALENE GEL 0.1%',
+            'EYE DROPS ARTIFICIAL TEARS', 'ANTIBIOTIC EYE DROPS', 'STEROID EYE DROPS', 'GLAUCOMA EYE DROPS',
+            'EAR DROPS WAX REMOVAL', 'ANTIBIOTIC EAR DROPS', 'NASAL SPRAY SALINE', 'DECONGESTANT NASAL SPRAY',
+            'THROAT LOZENGES', 'COUGH SYRUP', 'EXPECTORANT SYRUP', 'ANTITUSSIVE SYRUP',
+            'LAXATIVE TABLET', 'STOOL SOFTENER', 'ANTI-DIARRHEAL', 'ORAL REHYDRATION SALT',
+            'ANTACID LIQUID', 'SIMETHICONE DROPS', 'PROBIOTIC CAPSULES', 'DIGESTIVE AID',
+            'MOTION SICKNESS TABLET', 'ANTI-NAUSEA MEDICATION', 'APPETITE STIMULANT', 'WEIGHT LOSS SUPPLEMENT',
+            'ENERGY BOOSTER', 'MEMORY ENHANCER', 'STRESS RELIEF', 'MOOD STABILIZER',
+            'SLEEP AID NATURAL', 'ANXIETY RELIEF', 'DEPRESSION SUPPORT', 'ADHD MEDICATION',
+            'MIGRAINE RELIEF', 'TENSION HEADACHE', 'MUSCLE RELAXANT', 'JOINT PAIN RELIEF',
+            'ARTHRITIS MEDICATION', 'OSTEOPOROSIS PREVENTION', 'BONE HEALTH SUPPORT', 'CARTILAGE SUPPORT'
+        ];
+
+        function getRandomDate(start, end) {
+            return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+        }
+
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatCurrency(amount) {
+            return 'Rp ' + amount.toLocaleString('id-ID');
+        }
+
+        function generateData() {
+            document.getElementById('status').innerHTML = '<div class="status loading">🔄 Sedang generate data obat...</div>';
+            
+            setTimeout(() => {
+                medicineData = [];
+                const today = new Date();
+                const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+                const twoYearsFromNow = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate());
+
+                for (let i = 0; i < 200; i++) {
+                    const barangMasuk = Math.floor(Math.random() * 500) + 50;
+                    const barangKeluar = Math.floor(Math.random() * (barangMasuk - 10)) + 5;
+                    const hargaBeli = Math.floor(Math.random() * 100000) + 5000;
+                    const hargaJual = Math.floor(hargaBeli * (1.2 + Math.random() * 0.8)); // markup 20-100%
+                    const dijualDalamBentuk = ['TABLET', 'KAPSUL', 'SIRUP', 'BOTOL', 'STRIP', 'TUBE', 'SACHET', 'VIAL', 'AMPUL', 'BOX'][Math.floor(Math.random() * 10)];
+                    
+                    medicineData.push({
+                        'Nama Barang': medicineNames[i % medicineNames.length],
+                        'Jumlah Barang Masuk': barangMasuk,
+                        'Jumlah Barang Keluar': barangKeluar,
+                        'Jumlah Stok': barangMasuk - barangKeluar,
+                        'Tanggal': formatDate(getRandomDate(oneYearAgo, today)),
+                        'Tanggal Kadaluwarsa': formatDate(getRandomDate(today, twoYearsFromNow)),
+                        'Stok Default': 300,
+                        'Harga Jual': hargaJual,
+                        'Harga Beli': hargaBeli,
+                        'Dijual dalam bentuk': dijualDalamBentuk
+                    });
+                }
+
+                document.getElementById('status').innerHTML = '<div class="status success">✅ Berhasil generate 200 data obat!</div>';
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('previewBtn').disabled = false;
+            }, 1000);
+        }
+
+        function previewData() {
+            if (medicineData.length === 0) return;
+
+            let html = '<h3>🔍 Preview Data (10 data pertama)</h3>';
+            html += '<table><thead><tr>';
+            
+            // Header
+            Object.keys(medicineData[0]).forEach(key => {
+                html += `<th>${key}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            // Data (10 pertama)
+            for (let i = 0; i < Math.min(10, medicineData.length); i++) {
+                html += '<tr>';
+                Object.values(medicineData[i]).forEach(value => {
+                    if (typeof value === 'number' && (String(value).includes('Harga') || value > 1000)) {
+                        html += `<td>${formatCurrency(value)}</td>`;
+                    } else {
+                        html += `<td>${value}</td>`;
+                    }
+                });
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            html += `<p style="text-align: center; margin-top: 15px; color: #666;"><em>Menampilkan 10 dari ${medicineData.length} data total</em></p>`;
+            
+            document.getElementById('preview').innerHTML = html;
+            document.getElementById('preview').style.display = 'block';
+        }
+
+        function downloadExcel() {
+            if (medicineData.length === 0) return;
+
+            // Buat workbook baru
+            const wb = XLSX.utils.book_new();
+            
+            // Convert data ke worksheet
+            const ws = XLSX.utils.json_to_sheet(medicineData);
+            
+            // Set column widths
+            const colWidths = [
+                {wch: 25}, // Nama Barang
+                {wch: 15}, // Jumlah Barang Masuk
+                {wch: 15}, // Jumlah Barang Keluar
+                {wch: 12}, // Jumlah Stok
+                {wch: 12}, // Tanggal
+                {wch: 15}, // Tanggal Kadaluwarsa
+                {wch: 12}, // Stok Default
+                {wch: 15}, // Harga Jual
+                {wch: 15}, // Harga Beli
+                {wch: 18}  // Dijual dalam bentuk
+            ];
+            ws['!cols'] = colWidths;
+
+            // Tambah worksheet ke workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Data Obat");
+            
+            // Generate nama file dengan timestamp
+            const now = new Date();
+            const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+            const filename = `Data_Obat_${timestamp}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(wb, filename);
+            
+            document.getElementById('status').innerHTML = `<div class="status success">📥 File Excel "${filename}" berhasil didownload!</div>`;
+        }
+
+        // Auto generate data saat halaman dimuat
+        window.onload = function() {
+            setTimeout(generateData, 500);
+        };
+    </script>
+</body>
+</html>
